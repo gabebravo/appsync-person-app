@@ -1,8 +1,7 @@
 import React from "react";
 import { Mutation, Query } from 'react-apollo'
-import { getPeople } from '../queries'
+import { getPeople, getPeopleOu } from '../queries'
 import { deletePerson } from '../mutations'
-
 import { withStyles } from '@material-ui/core/styles'
 import Paper from "@material-ui/core/Paper";
 import List from "@material-ui/core/List";
@@ -11,6 +10,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import ListSubheader from "@material-ui/core/ListSubheader";
 import Icon from '@material-ui/core/Icon';
 import cyan from '@material-ui/core/colors/cyan';
+const shortid = require('shortid');
 
 const styles = theme => ({
   root: {
@@ -47,14 +47,25 @@ const styles = theme => ({
 });
 
 const DeleteButton = ({ id }) => (
-  <Mutation mutation={deletePerson}
-    refetchQueries={() => {
-      return [{ query: getPeople }];
-    }}
-  >
-    {(deletePerson) => (
+  <Mutation mutation={deletePerson}>
+    {deletePerson => (
       <Icon style={{ fontSize: '2rem' }} color="secondary"
-        onClick={() => deletePerson({ variables: { id } })}>
+        onClick={() => 
+        	deletePerson({ 
+            variables: { id },
+            optimisticResponse: {
+              __typename: "Mutation",
+              deletePerson: {
+                __typename: "Person", id: shortid.generate()
+              }
+            }, // note : the readQuery is not OU version
+            update: (proxy, { data: { deletePerson } }) => {
+              const data = proxy.readQuery({ query: getPeople });
+              data.allPeople = data.allPeople.filter(person => person.id !== id);
+              proxy.writeQuery({ query: getPeople, data });
+            } // the filter mutates the original data
+          })
+        }>
         delete_forever
       </Icon>
     )}
