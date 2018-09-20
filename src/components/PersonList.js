@@ -1,6 +1,6 @@
 import React from "react";
 import { Mutation, Query } from 'react-apollo'
-import { getPeople, getPeopleOu } from '../queries'
+import { getPeople } from '../queries'
 import { deletePerson } from '../mutations'
 import { withStyles } from '@material-ui/core/styles'
 import Paper from "@material-ui/core/Paper";
@@ -57,8 +57,8 @@ const DeleteButton = ({ id }) => (
               __typename: "Mutation",
               deletePerson: {
                 __typename: "Person", id: shortid.generate()
-              }
-            }, // note : the readQuery is not OU version
+              } // note : the readQuery below is not the OU version >> 
+            }, // previously query already cahced the data for this one
             update: (proxy, { data: { deletePerson } }) => {
               const data = proxy.readQuery({ query: getPeople });
               data.allPeople = data.allPeople.filter(person => person.id !== id);
@@ -74,7 +74,9 @@ const DeleteButton = ({ id }) => (
 
 const PersonList = ({ classes }) => (
   <Query query={getPeople}>
-    {({ data }) => (
+    {({ data }) => {
+      console.log('data', data)
+      return (
         <Paper className={classes.root}>
           <List className={classes.list}>
             <div>
@@ -92,7 +94,7 @@ const PersonList = ({ classes }) => (
           </List>
         </Paper>
       )
-    }
+    }}
   </Query>
 )
 
