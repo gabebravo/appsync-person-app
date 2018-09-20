@@ -1,8 +1,7 @@
 import React, { Component } from "react";
 import { Mutation } from 'react-apollo'
-import { getPeople } from '../queries'
+import { getPeople, getPeopleOu } from '../queries'
 import { addPerson } from '../mutations'
-
 import { withStyles } from '@material-ui/core/styles'
 import Paper from "@material-ui/core/Paper";
 import List from "@material-ui/core/List";
@@ -11,6 +10,7 @@ import TextField from '@material-ui/core/TextField';
 import ListSubheader from "@material-ui/core/ListSubheader";
 import Button from '@material-ui/core/Button'
 import grey from '@material-ui/core/colors/grey';
+const shortid = require('shortid');
 
 const styles = theme => ({
   root: {
@@ -65,7 +65,7 @@ class PersonForm extends Component {
     return (
       <Paper className={classes.root}>
         <List className={classes.list}>
-          <ListSubheader disableSticky className={classes.subheader}>Add A Person</ListSubheader>
+          <ListSubheader disableSticky className={classes.subheader}>Add Person</ListSubheader>
           <ListItem>
             <form className={classes.container} noValidate autoComplete="off">
               <TextField
@@ -99,16 +99,26 @@ class PersonForm extends Component {
             </form>
           </ListItem>
         </List>
-        <Mutation mutation={addPerson}
-          refetchQueries={() => {
-            return [{ query: getPeople }];
-          }}
-        >
-          {(addPerson) => (
+        <Mutation mutation={addPerson}>
+          {addPerson => ( // note addPerson is used 6 times
             <Button color="secondary" variant="contained" 
-              onClick={() => 
+              onClick={ () => 
                 this.state.name.length > 0 && this.state.age.length > 0 &&
-                addPerson({ variables: { name: this.state.name, age: this.state.age } })
+                addPerson({ // the whole call >> note: variables used for both call and OU
+                  variables: { name: this.state.name, age: this.state.age },
+                  optimisticResponse: { // original OU cache write
+                    __typename: "Mutation",
+                    addPerson: { // __typename and id required
+                      __typename: "Person", id: shortid.generate(),
+                      name: this.state.name, age: this.state.age 
+                    }
+                  }, // this is the OU getting overwritten by the update
+                  update: (proxy, { data: { addPerson } }) => {
+                    const data = proxy.readQuery({ query: getPeopleOu });
+                    data.allPeople.push(addPerson);
+                    proxy.writeQuery({ query: getPeople, data });
+                  }
+                })
                 .then(result => (result ? this.setState(DEFAULT_STATE) : console.log('person not added')))
                 .catch(error => console.log('error'))
               }

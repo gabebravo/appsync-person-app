@@ -12,7 +12,8 @@
     "react": "^16.5.1",
     "react-apollo": "^2.1.11",
     "react-dom": "^16.5.1",
-    "react-scripts": "1.1.5"
+    "react-scripts": "1.1.5",
+    "shortid": "^2.2.13"
   },
   "scripts": {
     "start": "react-scripts start",

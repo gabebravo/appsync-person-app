@@ -8,6 +8,14 @@ export const getPeople = gql`{
   }
 }`;
 
+export const getPeopleOu = gql`{
+  allPeople @client {
+    id
+    name
+    age
+  }
+}`;
+
 export const getPerson = gql`
 query($id: String!) {
   getPerson(id: $id) {
